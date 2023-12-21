@@ -14,9 +14,10 @@ from sklearn.linear_model import LinearRegression
 if len(sys.argv) != 2:
         sys.exit("Usage: python ALP.py moviedataset.csv")
 
+#to read the dataset
 df = pd.read_csv('moviedataset.csv')
 
-missing_value = df.isna()
+#data preprocessing
 
 df['year']=df['year'].str.replace("-","")
 
@@ -72,6 +73,8 @@ df['Top 5 Casts'] = df['Top 5 Casts'].apply(list_to_string)
 top_Genres = df.groupby('Generes')[['Rating']].mean().sort_values('Rating',ascending=False).head(10).round(2)
 top_Genres.reset_index(inplace=True)
 
+
+#to make new join table for searching similiarity
 df['tags'] = df['Overview'] + df['Generes'] + df['Plot Kyeword'] + df['Top 5 Casts'] + df['Writer']
 df['movie_id'] = range(1, len(df) + 1)
 
@@ -80,12 +83,15 @@ new_df = df[['movie_id', 'movie title', 'tags']]
 new_df.rename(columns={'movie title': 'movie_title'}, inplace=True)
 new_df['movie_title'] = new_df['movie_title'].str.lower()
 
+
+#to convert the dataset to TF-IDF matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 tfidf = TfidfVectorizer(stop_words='english')
 
 tfidf_matrix = tfidf.fit_transform(new_df['tags'])
 
+#to calculate the similiarity between each data based on TF-ODF matrix
 from sklearn.metrics.pairwise import cosine_similarity
 
 cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
@@ -103,8 +109,8 @@ from tkinter import ttk
 entry = None
 result_text = None
 
+#function to get the recommendations title
 def get_recommendations(title):
-    # Fungsi rekomendasi yang sama seperti yang Anda berikan sebelumnya
     idx = idxs[title]
     sim_scores = list(enumerate(cosine_sim[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
@@ -112,6 +118,7 @@ def get_recommendations(title):
     movie_indices = [i[0] for i in sim_scores]
     return df.iloc[movie_indices]
 
+# to show the other movie recommendations
 def show_recommendations():
     global entry, result_text
     title = entry.get().lower()
@@ -124,7 +131,7 @@ def show_recommendations():
         result_text.delete(1.0, tk.END)
         result_text.insert(tk.END, recommendations[['movie title', 'Rating']].to_string(index=False))
 
-# Fungsi untuk menampilkan UI
+#to show the UI
 def main():
     global entry, result_text
     root = tk.Tk()
