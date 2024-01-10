@@ -110,15 +110,48 @@ entry = None
 result_text = None
 
 #function to get the recommendations title
+# def get_recommendations(title):
+#     idx = idxs[title]
+#     sim_scores = list(enumerate(cosine_sim[idx]))
+#     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+#     sim_scores = sim_scores[:11]
+#     movie_indices = [i[0] for i in sim_scores]
+#     return df.iloc[movie_indices]
+
 def get_recommendations(title):
     idx = idxs[title]
     sim_scores = list(enumerate(cosine_sim[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
     sim_scores = sim_scores[:11]
     movie_indices = [i[0] for i in sim_scores]
-    return df.iloc[movie_indices]
+    recommendations = df.iloc[movie_indices].sort_values(by='Rating', ascending=False)
+    return recommendations[['movie title', 'Rating', 'Overview']]
 
 # to show the other movie recommendations
+# def show_recommendations():
+#     global entry, result_text
+#     title = entry.get().lower()
+
+#     if title not in idxs:
+#         result_text.delete(1.0, tk.END)
+#         result_text.insert(tk.END, "Movie not found. Please enter a valid movie title.")
+#     else:
+#         recommendations = get_recommendations(title)
+#         result_text.delete(1.0, tk.END)
+#         result_text.insert(tk.END, recommendations[['movie title', 'Rating']].to_string(index=False))
+
+# def show_recommendations():
+#     global entry, result_text
+#     title = entry.get().lower()
+
+#     if title not in idxs:
+#         result_text.delete(1.0, tk.END)
+#         result_text.insert(tk.END, "Movie not found. Please enter a valid movie title.")
+#     else:
+#         recommendations = get_recommendations(title)
+#         result_text.delete(1.0, tk.END)
+#         result_text.insert(tk.END, recommendations.to_string(index=False))
+
 def show_recommendations():
     global entry, result_text
     title = entry.get().lower()
@@ -129,7 +162,34 @@ def show_recommendations():
     else:
         recommendations = get_recommendations(title)
         result_text.delete(1.0, tk.END)
-        result_text.insert(tk.END, recommendations[['movie title', 'Rating']].to_string(index=False))
+        result_text.insert(tk.END, f"{'Title':<40}{'Rating':<15}{'Synopsis':<15}\n")
+        result_text.insert(tk.END, "=" * 70 + "\n")
+        for index, row in recommendations.iterrows():
+            result_text.insert(tk.END, f"{row['movie title'][:35]:<40}{row['Rating']:<15}")
+            synopsis_button = tk.Button(
+                result_text,
+                text="View Synopsis",
+                command=lambda r=row['Overview'], t=row['movie title']: show_popup(r, t)
+            )
+            synopsis_button.pack()
+            result_text.window_create(tk.END, window=synopsis_button)
+            result_text.insert(tk.END, "\n")
+
+def show_popup(synopsis, movie_title):
+    popup = tk.Tk()
+    popup.title(f"Synopsis of {movie_title}")
+    popup.geometry("400x100")
+
+    text = tk.Text(popup, wrap="word")
+    scroll = tk.Scrollbar(popup, command=text.yview)
+    text.configure(yscrollcommand=scroll.set)
+
+    text.pack(side="left", fill="both", expand=True)
+    scroll.pack(side="right", fill="y")
+
+    text.insert("1.0", synopsis)
+
+    popup.mainloop()
 
 #to show the UI
 def main():
@@ -146,7 +206,7 @@ def main():
     button = ttk.Button(root, text="Get Recommendations", command=show_recommendations)
     button.pack(pady=10)
 
-    result_text = tk.Text(root, height=10, width=50)
+    result_text = tk.Text(root, height=10, width=70)
     result_text.pack(pady=20)
 
     root.mainloop()
